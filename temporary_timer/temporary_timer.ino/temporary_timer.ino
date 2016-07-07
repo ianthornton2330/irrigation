@@ -38,18 +38,22 @@ initialize the pin into the off state */
 /* Here we are turing the relays on for their allotted times */
 
     digitalWrite(RELAY1,LOW);           // Turns ON Relays 1
-   delay(3600000);                                      // Wait 1 hour
+   delay(900000);                                      // Wait 15 mins
    digitalWrite(RELAY1,HIGH);          // Turns Relay Off
  
    digitalWrite(RELAY2,LOW);           // Turns ON Relays 2
-   delay(3600000);                                      // Wait 1 hour
+   delay(900000);                                      // Wait 15 mins
    digitalWrite(RELAY2,HIGH);          // Turns Relay Off
  
    digitalWrite(RELAY3,LOW);           // Turns ON Relays 3
-   delay(3600000);                                      // Wait 1 hour
+   delay(900000);                                      // Wait 15 mins
    digitalWrite(RELAY3,HIGH);          // Turns Relay Off
  
    digitalWrite(RELAY4,LOW);           // Turns ON Relays 4
-   delay(600000);                                      // Wait 10 Minutes
-   digitalWrite(RELAY4,HIGH);          // Turns Relay Off     
+   delay(300000);                                      // Wait 5 Minutes
+   digitalWrite(RELAY4,HIGH);          // Turns Relay Off 
+
+   digitalWrite(RELAY0,LOW);           // Turns ON Relay 0 - a non existent relay to wait for 23 hours 50 Minutes
+   delay(85800000);
+   digitalWrite(RELAY0,HIGH);          // Turns OFF Relay 0, the non existent relay
  }
