@@ -9,17 +9,11 @@
 
 // Momentary Button for Pump power setup
 
-int inPin = 8;         // the number of the input pin
-int outPin = 6;       // the number of the output pin
+const int buttonPin = 8;     // the number of the pushbutton pin
+const int ledPin =  13;      // the number of the LED pin
 
-int state = HIGH;      // the current state of the output pin
-int reading;           // the current reading from the input pin
-int previous = LOW;    // the previous reading from the input pin
-
-// the follow variables are long's because the time, measured in miliseconds,
-// will quickly become a bigger number than can be stored in an int.
-long time = 0;         // the last time the output pin was toggled
-long debounce = 200;   // the debounce time, increase if the output flickers
+// variables will change:
+int buttonState = 0;         // variable for reading the pushbutton status
 
 void setup()
 {
@@ -31,15 +25,25 @@ void setup()
   pinMode(RELAY5, OUTPUT);
   pinMode(RELAY0, OUTPUT);
 
-// Setup for the Momentary Push Buttons
-  pinMode(inPin, INPUT);
-  pinMode(outPin, OUTPUT);
-
 
 }
  
  void loop()
 {
+
+ // read the state of the pushbutton value:
+  buttonState = digitalRead(buttonPin);
+
+  // check if the pushbutton is pressed.
+  // if it is, the buttonState is HIGH:
+  if (buttonState == HIGH) {
+    // turn LED on:
+    digitalWrite(ledPin, HIGH);
+  } else {
+    // turn LED off:
+    digitalWrite(ledPin, LOW);
+  }
+  
 /*This step initializes the relay pins. However, they start in the ON position, so we are using just 1 millisecond times to
 initialize the pin into the off state */
 
@@ -86,25 +90,4 @@ initialize the pin into the off state */
    digitalWrite(RELAY0,LOW);           // Turns ON Relay 0 - a non existent relay to wait for 23 hours 50 Minutes
    delay(85800000);
    digitalWrite(RELAY0,HIGH);          // Turns OFF Relay 0, the non existent relay
-
-// Momentary Pump Power Setup
-
- reading = digitalRead(inPin);
-
-  // if the input just went from LOW and HIGH and we've waited long enough
-  // to ignore any noise on the circuit, toggle the output pin and remember
-  // the time
-  if (reading == HIGH && previous == LOW && millis() - time > debounce) {
-    if (state == HIGH)
-      state = LOW;
-    else
-      state = HIGH;
-
-    time = millis();    
-  }
-
-  digitalWrite(outPin, state);
-
-  previous = reading;
-
  }
