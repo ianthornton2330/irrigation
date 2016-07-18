@@ -1,7 +1,6 @@
 double soil=0;
 double soil2=0;
 
-
 // the setup routine runs once when you press reset:
 void setup() {
   // initialize serial communication at 9600 bits per second:
@@ -33,8 +32,7 @@ void loop() {
      String pubData = String(avg) + "%";
      Particle.publish("SoilLog", pubData);
 
-
-  delay(10000);        // delay in between reads for stability
+  delay(10800000);        // delay reads for every 3 hours
 }
 
 
