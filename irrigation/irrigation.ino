@@ -67,14 +67,23 @@ void loop() {
 
     if(loopCounter == 6*60*3){
     
-    Serial.print(soil);
-    Serial.println("%");
-    Serial.print(soil2);
-    Serial.println("%");
-    Particle.publish("SoilLog", (String)result + "%");
-    loopCounter = 0;
+		Serial.print(soil);
+		Serial.println("%");
+		Serial.print(soil2);
+		Serial.println("%");
+		Particle.publish("SoilLog", (String)result + "%");
+		loopCounter = 0;
     }
     
+		/*
+		Particle.publish("Soil Log", 
+		"soil:" + String::format("%.2f",soil) + "\%" + 
+		", soil2:" + String::format("%.2f",soil2) + "\%" + 
+		" - soilAvg:" + String::format("%.2f",soilAvg) + "\%",
+		60, PRIVATE
+		);
+		*/
+	
     Serial.print("Voltage: ");
     Serial.print(sensorVoltage);
     Serial.print("Wind speed MPH: ");
