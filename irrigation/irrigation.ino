@@ -25,10 +25,10 @@ void IFTTTsentEvent(const char *event, const char *data)
   //i++;
   //Serial.print(i);
   //Serial.print(event);
-  Particle.publish("Received event from IFTTT", "Event: " + event + ", Data: " + data, 60, PRIVATE); 
+  Particle.publish("Received event from IFTTT", "Event: " + (String)event + ", Data: " + (String)data, 60, PRIVATE); 
   
-  if (event == "IFTTT-relay"){
-	relayTest();
+  if ((String)event == "IFTTT-relay"){
+  relayTest();
   }
   //Serial.print(", data: ");
   /*if (data)
@@ -38,11 +38,14 @@ void IFTTTsentEvent(const char *event, const char *data)
   */
 }
 
+void relayTest(){
+    Particle.publish("Relays Fired", "", 60, PRIVATE);
+}
 
 void setup() {
     Serial.begin(9600);
     Particle.variable("soil", soil);
-	Particle.subscribe("IFTTT", IFTTTsentEvent);
+  Particle.subscribe("IFTTT", IFTTTsentEvent);
 }
 
 int loopCounter = 0;
@@ -87,23 +90,23 @@ void loop() {
 
     if(loopCounter == 6*60*3){
     
-		Serial.print(soil);
-		Serial.println("%");
-		Serial.print(soil2);
-		Serial.println("%");
-		Particle.publish("SoilLog", (String)result + "%");
-		loopCounter = 0;
+    Serial.print(soil);
+    Serial.println("%");
+    Serial.print(soil2);
+    Serial.println("%");
+    Particle.publish("SoilLog", (String)result + "%");
+    loopCounter = 0;
     }
     
-		/*
-		Particle.publish("Soil Log", 
-		"soil:" + String::format("%.2f",soil) + "\%" + 
-		", soil2:" + String::format("%.2f",soil2) + "\%" + 
-		" - soilAvg:" + String::format("%.2f",soilAvg) + "\%",
-		60, PRIVATE
-		);
-		*/
-	
+    /*
+    Particle.publish("Soil Log", 
+    "soil:" + String::format("%.2f",soil) + "\%" + 
+    ", soil2:" + String::format("%.2f",soil2) + "\%" + 
+    " - soilAvg:" + String::format("%.2f",soilAvg) + "\%",
+    60, PRIVATE
+    );
+    */
+  
     Serial.print("Voltage: ");
     Serial.print(sensorVoltage);
     Serial.print("Wind speed MPH: ");
