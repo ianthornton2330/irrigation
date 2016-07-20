@@ -27,7 +27,7 @@ void IFTTTsentEvent(const char *event, const char *data)
   //Serial.print(event);
   Particle.publish("Received event from IFTTT", "Event: " + event + ", Data: " + data, 60, PRIVATE); 
   
-  if (event == "relay"){
+  if (event == "IFTTT-relay"){
 	relayTest();
   }
   //Serial.print(", data: ");
@@ -42,7 +42,7 @@ void IFTTTsentEvent(const char *event, const char *data)
 void setup() {
     Serial.begin(9600);
     Particle.variable("soil", soil);
-	Particle.subscribe("temperature", IFTTTsentEvent);
+	Particle.subscribe("IFTTT", IFTTTsentEvent);
 }
 
 int loopCounter = 0;
