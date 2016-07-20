@@ -20,9 +20,29 @@ double soil=0;
 double soil2=0;
 
 
+void IFTTTsentEvent(const char *event, const char *data)
+{
+  //i++;
+  //Serial.print(i);
+  //Serial.print(event);
+  Particle.publish("Received event from IFTTT", "Event: " + event + ", Data: " + data, 60, PRIVATE); 
+  
+  if (event == "relay"){
+	relayTest();
+  }
+  //Serial.print(", data: ");
+  /*if (data)
+  Serial.println(data);
+  else
+  Serial.println("NULL");
+  */
+}
+
+
 void setup() {
     Serial.begin(9600);
     Particle.variable("soil", soil);
+	Particle.subscribe("temperature", IFTTTsentEvent);
 }
 
 int loopCounter = 0;
