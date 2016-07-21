@@ -329,11 +329,9 @@ void loop() {
         }
     }
 
-    loopCounter++;
-
     //Publish Results
 
-    if(loopCounter == 0 or loopCounter == 6*60*3){ //get to minutes, get to hours, number of hours.
+    if(loopCounter == 30*60*3){ //get to minutes, get to hours, number of hours.
         
         //Every 3 hours, publish hygroAverage
         // Serial.print(hygro1);
@@ -361,7 +359,11 @@ void loop() {
     // Serial.print(anemoVoltage);
     // Serial.print("Wind speed MPH: ");
     // Serial.println(windSpeed);
-    Particle.publish("WindSpeed", (String)windSpeed);
+    if((int)loopCounter % 5 == 0){
+        Particle.publish("WindSpeed", (String)windSpeed);
+    }
+    
+    loopCounter++;
 
     setLED(0,255,255,255,5); //r,g,b,%,x - flash cyan 5x
     delay(1000*2);   //wait 2 seconds between loops
