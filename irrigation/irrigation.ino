@@ -49,7 +49,7 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
     int anemoValue = 0; //Variable stores the value direct from the analog pin
     float anemoVoltage = 0.0; //Variable that stores the voltage (in Volts) from the anemometer being sent to the analog pin
     float windSpeed = 0.0; // Wind speed in meters per second (m/s)
-    float voltageConversionConstant = .00322265625; //This constant maps the value provided from the analog read function, which ranges from 0 to 1023, to actual voltage, which ranges from 0V to 5V
+    float voltageConversionConstant = .00080; //This constant maps the value provided from the analog read function, which ranges from 0 to 1023, to actual voltage, which ranges from 0V to 5V
     int anemoDelay = 3000; //Delay between sensor readings, measured in milliseconds (ms)
 
     float anemoVoltMin = 0.4; // Mininum output voltage from anemometer in mV.
