@@ -133,9 +133,9 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
         if (timesToBlink > 0){
             for (int count = 0; count < timesToBlink; count++) {
                 RGB.brightness(255); //full
-                delay(20);
+                delay(40);
                 RGB.brightness(0); //off
-                delay(20);
+                delay(40);
             }
         }
         
@@ -151,7 +151,7 @@ void setup() {
     RGB.control(true);
 
     //show we're in control
-    setLED(255,255,0,255,100); //r,g,b,%,x - flashing red
+    setLED(255,0,255,255,100); //r,g,b,%,x - flashing magenta
 
     //init up indicator LED, not on though.
     pinMode(idleLED, OUTPUT);
@@ -190,7 +190,7 @@ void setup() {
     Particle.publish("Booted", strBootup, 60, PRIVATE);
     
     //init complete!
-    setLED(0,0,255,255,0); //r,g,b,%,x - full green
+    setLED(0,255,0,255,0); //r,g,b,%,x - full green
 }
 
 
@@ -282,6 +282,7 @@ void loop() {
                 phaseLength = 60*6;     //run for 6 minutes
                 nextPhase = waterRow2;
                 currentPhase = newPhase;
+                setLED(255,255,0,255,10); //r,g,b,%,x - flash yellow 10x
                 break;
             case waterRow1:
                 lastPhase = waterRow1;
@@ -293,6 +294,7 @@ void loop() {
                 phaseLength = 60*6;     //run for 6 minutes
                 nextPhase = waterSprinklers;
                 currentPhase = newPhase;
+                setLED(255,150,0,255,10); //r,g,b,%,x - flash orange? 10x
                 break;
             case waterRow2:
                 lastPhase = waterRow2;
@@ -302,8 +304,9 @@ void loop() {
                 row2Stop();
                 sprinklerStart();
                 phaseLength = 60*5;     //run for 5 minutes
-                nextPhase = 0;
+                nextPhase = idle;
                 currentPhase = newPhase;
+                setLED(255,75,0,255,10); //r,g,b,%,x - flash red-orange? 10x
                 break;
             /*case "waterRow3":
                 //do stuff
@@ -314,12 +317,14 @@ void loop() {
                 //actions
                 sprinklerStop();
                 pumpStop();
-                phaseLength = 0;
-                nextPhase = 0;
+                phaseLength = 10;
+                nextPhase = idle;
                 currentPhase = newPhase;
+                setLED(0,255,0,255,10); //r,g,b,%,x - flash green 10x
                 break;
             default:
                 //this should never happen UNLESS phase == "" or on error
+                setLED(0,255,255,255,0); //r,g,b,%,x - solid cyan
                 allIrrigationStop();
         }
     }
@@ -358,8 +363,8 @@ void loop() {
     // Serial.println(windSpeed);
     Particle.publish("WindSpeed", (String)windSpeed);
 
-
-    delay(1000*10);   //loop every 10 seconds
+    setLED(0,255,255,255,5); //r,g,b,%,x - flash cyan 5x
+    delay(1000*2);   //wait 2 seconds between loops
 }
 
 
