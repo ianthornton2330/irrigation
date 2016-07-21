@@ -36,7 +36,13 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
 
 //GLOBALS
 
+    // time loop globals
     String currentPhase = "init";
+    String newPhase = "";
+    String nextPhase = "";
+    String lastPhase = "";
+    double phaseLength = 0;
+    String phaseStartedAt = "";
     
     //hygro values
     double hygro1 = 0; //Variable stores the value direct from the analog pin
@@ -60,6 +66,7 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
 
     //loop and logic globals
     double loopCounter = 0;
+
 
 
 //SUBSCRIPTIONS and GLOBAL FUNCTIONS
@@ -178,18 +185,54 @@ void setup() {
     setLED(0,0,255,255,0); //r,g,b,%,x - full green
 }
 
-// LOOP
 
-void loop() {
 
-    loopCounter++;
+void row1Start(){
+    digitalWrite(valveRow1, LOW); //start row 1
+}
 
+void row1Stop(){
+    digitalWrite(valveRow1, HIGH); //stop row 1  
+}
+
+void row2Start(){
+    digitalWrite(valveRow2, LOW); //start row 2  
+}
+
+void row2Stop(){
+    digitalWrite(valveRow2, HIGH); //stop row 1
+}
+
+void sprinklerStart(){
+    digitalWrite(valveSprinkler, LOW); //start sprinkler
+}
+
+void sprinklerStop(){
+    digitalWrite(valveSprinkler, HIGH); //start sprinkler  
+}
+
+void allIrrigationStop(){
+    digitalWrite(valveRow1, HIGH); //stop row 1
+    digitalWrite(valveRow2, HIGH); //stop row 1
+    digitalWrite(valveSprinkler, HIGH); //start sprinkler
+    digitalWrite(valvePump, HIGH); //stop pump
+}
+
+void pumpStart(){
+    digitalWrite(valvePump, LOW); //stop pump
+}
+
+void pumpStop(){
+    digitalWrite(valvePump, HIGH); //stop pump
+}
+
+void hygrometerReadout(){
     float hygro1 = analogRead(hygro1Pin);
     hygro1 = constrain(hygro1, 1192, 4095);
-        //hygro1 = 2642;
+        //hygro1 = 2642;  //testing integer
     float hygro2 = analogRead(hygro2Pin);
     hygro2 = constrain(hygro2, 1192, 4095);
-        //hygro2 = 2642;
+        //hygro2 = 2642;  //testing integer
 
     // Convert to percentages
     // Value read minus 1192 (low value), then divided into 2093 (range between 1192 and 4095) = percentage dry (p). Then 100 - (p) will be percent wet (moisture percentage).
@@ -197,10 +240,12 @@ void loop() {
     hygro2Percent = 100-(((hygro2-1192)/2903)*100);
 
     float hygroAvg = (hygro1Percent + hygro2Percent) / 2;
+}
 
-    anemoValue = analogRead(anemoPin); //Get a value between 0 and 1023 from the analog pin connected to the anemometer
+void anemometerReadout(){
+    anemoValue = analogRead(anemoPin); //Get a value between 0 and 4095 from the analog pin connected to the anemometer
     anemoVoltage = anemoValue * voltageConversionConstant; //Convert sensor value to actual voltage
-
+    
     //Convert voltage value to wind speed using range of max and min voltages and wind speed for the anemometer
     if (anemoVoltage <= anemoVoltMin){
         windSpeed = 0; //Check if voltage is below minimum value. If so, set wind speed to zero.
@@ -209,15 +254,78 @@ void loop() {
         windSpeed = (anemoVoltage - anemoVoltMin) * windSpeedMax / (anemoVoltMax - anemoVoltMin); //For voltages above minimum value, use the linear relationship to calculate wind speed.
     }
 
+}
+
+// LOOP
+
+void loop() {
+
+    if(currentTime >= phaseStartedAt + phaseLength){
+        //it's time to switch phase
+        switch(currentPhase){
+            // case = old state
+            case "init":
+                lastPhase = "init";
+                newPhase = "waterRow1";
+                //actions
+                pumpStart();
+                row1Start();
+                phaseLength = 60*6;     //run for 6 minutes
+                nextPhase = "waterRow2";
+                currentPhase = newPhase;
+                break;
+            case "waterRow1":
+                lastPhase = "waterRow1";
+                newPhase = "waterRow2";
+                //actions
+                pumpStart(); //not necessary
+                row1Stop();
+                row2Start();
+                phaseLength = 60*6;     //run for 6 minutes
+                nextPhase = "waterSprinklers";
+                currentPhase = newPhase;
+                break;
+            case "waterRow2":
+                lastPhase = "waterRow2";
+                newPhase = "waterSprinklers";
+                //actions
+                pumpStart(); //not necessary
+                row2Stop();
+                sprinklerStart();
+                phaseLength = 60*5;     //run for 5 minutes
+                nextPhase = "";
+                currentPhase = newPhase;
+                break;
+            /*case "waterRow3":
+                //do stuff
+                break;*/
+            case "waterSprinklers":
+                lastPhase = "waterSprinklers";
+                newPhase = "idle";
+                //actions
+                sprinklerStop();
+                pumpStop();
+                phaseLength = 0;
+                nextPhase = "";
+                currentPhase = newPhase;
+                break;
+            default:
+                //this should never happen UNLESS phase == "" or on error
+                allIrrigationStop();
+        }
+    }
+
+    loopCounter++;
+
     //Publish Results
 
-    if(loopCounter == 6/**60*3*/){ //get to minutes, get to hours, number of hours.
+    if(loopCounter == 0 or loopCounter == 6*60*3){ //get to minutes, get to hours, number of hours.
         
         //Every 3 hours, publish hygroAverage
-        Serial.print(hygro1);
-        Serial.println("%");
-        Serial.print(hygro2);
-        Serial.println("%");
+        // Serial.print(hygro1);
+        // Serial.println("%");
+        //Serial.print(hygro2);
+        //Serial.println("%");
         Particle.publish("SoilLog", (String)hygroAvg + "%");
 
         loopCounter = 1;    //reset loop counter
@@ -235,44 +343,14 @@ void loop() {
     );
     */
   
-    Serial.print("Voltage: ");
-    Serial.print(anemoVoltage);
-    Serial.print("Wind speed MPH: ");
-    Serial.println(windSpeed);
+    // Serial.print("Voltage: ");
+    // Serial.print(anemoVoltage);
+    // Serial.print("Wind speed MPH: ");
+    // Serial.println(windSpeed);
     Particle.publish("WindSpeed", (String)windSpeed);
 
 
-    //ACT UPON CALCULATIONS
-    
-    digitalWrite(valvePump, LOW); //start pump. pump will stop automatically if/when pressure is achieved.
-    
-        digitalWrite(valveRow1, LOW); //start row 1
-        delay(1000*60*8); //8 minutes
-        digitalWrite(valveRow1, HIGH); //stop row 1
-        
-        digitalWrite(valveRow2, LOW); //start row 2
-        delay(1000*60*8); //8 minutes
-        digitalWrite(valveRow2, HIGH); //stop row 2
-        
-        /*
-        digitalWrite(valveRow3, LOW); //start row 3 - DISABLED
-        delay(10); //future addition
-        digitalWrite(valveRow3, HIGH); //stop row 3
-        */
-        
-        //if (windSpeed > 10){  //in the future, this will be used for water conservation
-        
-            digitalWrite(valveSprinkler, LOW); //start sprinkler
-            delay(1000*60*5); //5 minutes
-            digitalWrite(valveSprinkler, HIGH); //stop sprinkler
-        //}
-    
-    digitalWrite(valvePump, HIGH); //stop pump
-
     delay(1000*10);   //loop every 10 seconds
-    
-    //60*60*11.45
-    // loop every 11.45 hours, resuliting in a cycle every 12 hours, ideally.  
 }
 
 
