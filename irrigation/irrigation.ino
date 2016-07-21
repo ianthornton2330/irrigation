@@ -48,9 +48,9 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
     int newPhase = 0;
     int nextPhase = 0;
     int lastPhase = 0;
-    double phaseLength = 0;
-    String phaseStartedAt = "";
-    String currentTime = "";  
+    int phaseLength = 0;
+    int phaseStartedAt = 0;
+    int currentTime = 0;  
 
     //hygro values
     double hygro1 = 0; //Variable stores the value direct from the analog pin
@@ -63,7 +63,7 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
     int anemoValue = 0; //Variable stores the value direct from the analog pin
     float anemoVoltage = 0.0; //Variable that stores the voltage (in Volts) from the anemometer being sent to the analog pin
     float windSpeed = 0.0; // Wind speed in meters per second (m/s)
-    float voltageConversionConstant = .00080; //This constant maps the value provided from the analog read function, which ranges from 0 to 1023, to actual voltage, which ranges from 0V to 5V
+    float voltageConversionConstant = 0.00080; //This constant maps the value provided from the analog read function, which ranges from 0 to 4095, to actual voltage, which ranges from 0V to 3.3V
     int anemoDelay = 3000; //Delay between sensor readings, measured in milliseconds (ms)
 
     float anemoVoltMin = 0.4; // Mininum output voltage from anemometer in mV.
@@ -251,7 +251,7 @@ float hygrometerReadout(){
     return hygroAvg;
 }
 
-void anemometerReadout(){
+float anemometerReadout(){
     anemoValue = analogRead(anemoPin); //Get a value between 0 and 4095 from the analog pin connected to the anemometer
     anemoVoltage = anemoValue * voltageConversionConstant; //Convert sensor value to actual voltage
     
@@ -260,16 +260,40 @@ void anemometerReadout(){
         windSpeed = 0; //Check if voltage is below minimum value. If so, set wind speed to zero.
     }
     else {
-        windSpeed = (anemoVoltage - anemoVoltMin) * windSpeedMax / (anemoVoltMax - anemoVoltMin); //For voltages above minimum value, use the linear relationship to calculate wind speed.
+        windSpeed = (anemoVoltage - anemoVoltMin) * (windSpeedMax / (anemoVoltMax - anemoVoltMin)); //For voltages above minimum value, use the linear relationship to calculate wind speed.
     }
+    return windSpeed;
+
 
 }
+
+// blah blah code
+//rtc.now();
+//rtc.begin(&UDPClient, "au.pool.ntp.org");
+//rtc.setTimeZone(+11); // gmt offset
+//Time.setTime(rtc.nowEpoch());
+//System.reset()
+//Time.now() //syncs on startup and on any call of Time.syncTime();
+//Spark.connected()
+
+/*// reset the system after 60 seconds if the application is unresponsive
+ApplicationWatchdog wd(60000, System.reset);
+
+void loop() {
+  while (some_long_process_within_loop) {
+    wd.checkin(); // resets the AWDT count
+  }
+}
+// AWDT count reset automatically after loop() ends*/
+
+
 
 // LOOP
 
 void loop() {
 
-    if(currentTime >= phaseStartedAt + phaseLength){
+    if((int)Time.now() >= phaseStartedAt + phaseLength){
+        phaseStartedAt = Time.now();
         //it's time to switch phase
         switch (currentPhase){
             // case = old state
@@ -303,7 +327,7 @@ void loop() {
                 pumpStart(); //not necessary
                 row2Stop();
                 sprinklerStart();
-                phaseLength = 60*5;     //run for 5 minutes
+                phaseLength =  60*5;     //run for 5 minutes
                 nextPhase = idle;
                 currentPhase = newPhase;
                 setLED(255,75,0,255,10); //r,g,b,%,x - flash red-orange? 10x
@@ -313,12 +337,12 @@ void loop() {
                 break;*/
             case waterSprinklers:
                 lastPhase = waterSprinklers;
-                newPhase = idle;
+                newPhase = init;
                 //actions
                 sprinklerStop();
                 pumpStop();
-                phaseLength = 10;
-                nextPhase = idle;
+                phaseLength = 60*60*11.7;
+                nextPhase = init; //not being used but should be
                 currentPhase = newPhase;
                 setLED(0,255,0,255,10); //r,g,b,%,x - flash green 10x
                 break;
@@ -339,20 +363,21 @@ void loop() {
         //Serial.print(hygro2);
         //Serial.println("%");
         Particle.publish("SoilLog", (String)hygrometerReadout() + "%");
-
+        Particle.syncTime();
         loopCounter = 1;    //reset loop counter
     }
     else if (loopCounter == 0){
+        //first time only
         Particle.publish("SoilLog", (String)hygrometerReadout() + "%");           
     }
     
-    /*
-    Particle.publish("Soil Log", 
-    "soil:" + String::format("%.2f",soil) + "\%" + 
-    ", soil2:" + String::format("%.2f",soil2) + "\%" + 
-    " - soilAvg:" + String::format("%.2f",soilAvg) + "\%",
+    
+   /* Particle.publish("Time", 
+    "Time.Now is currently " + Time.now(),  //+ String::format("%.2f",soil) + "\%" + 
+   // ", soil2:" + String::format("%.2f",soil2) + "\%" + 
+    //" - soilAvg:" + String::format("%.2f",soilAvg) + "\%",
     60, PRIVATE
-    );
+    ); 
     */
   
     // Serial.print("Voltage: ");
@@ -360,7 +385,9 @@ void loop() {
     // Serial.print("Wind speed MPH: ");
     // Serial.println(windSpeed);
     if((int)loopCounter % 5 == 0){
-        Particle.publish("WindSpeed", (String)windSpeed);
+        Particle.publish("WindSpeed", (String)anemometerReadout() + " MPH", 60, PRIVATE);
+        Particle.publish("AnemoVoltage", (String)anemoVoltage);
+        Particle.publish("AnemoPinReading", (String)anemoValue);
     }
     
     loopCounter++;
