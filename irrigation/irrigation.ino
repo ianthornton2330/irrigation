@@ -37,13 +37,21 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
 //GLOBALS
 
     // time loop globals
-    String currentPhase = "init";
-    String newPhase = "";
-    String nextPhase = "";
-    String lastPhase = "";
+    const int init = 1;
+    const int waterRow1 = 2;
+    const int waterRow2 = 3;
+    const int waterRow3 = 4;
+    const int waterSprinklers = 5;
+    const int idle = 100;
+
+    int currentPhase = init;
+    int newPhase = 0;
+    int nextPhase = 0;
+    int lastPhase = 0;
     double phaseLength = 0;
     String phaseStartedAt = "";
-    
+    String currentTime = "";  
+
     //hygro values
     double hygro1 = 0; //Variable stores the value direct from the analog pin
     double hygro2 = 0; //Variable stores the value direct from the analog pin
@@ -226,7 +234,7 @@ void pumpStop(){
     digitalWrite(valvePump, HIGH); //stop pump
 }
 
-void hygrometerReadout(){
+float hygrometerReadout(){
     float hygro1 = analogRead(hygro1Pin);
     hygro1 = constrain(hygro1, 1192, 4095);
         //hygro1 = 2642;  //testing integer
@@ -240,6 +248,7 @@ void hygrometerReadout(){
     hygro2Percent = 100-(((hygro2-1192)/2903)*100);
 
     float hygroAvg = (hygro1Percent + hygro2Percent) / 2;
+    return hygroAvg;
 }
 
 void anemometerReadout(){
@@ -262,51 +271,51 @@ void loop() {
 
     if(currentTime >= phaseStartedAt + phaseLength){
         //it's time to switch phase
-        switch(currentPhase){
+        switch (currentPhase){
             // case = old state
-            case "init":
-                lastPhase = "init";
-                newPhase = "waterRow1";
+            case init:
+                lastPhase = init;
+                newPhase = waterRow1;
                 //actions
                 pumpStart();
                 row1Start();
                 phaseLength = 60*6;     //run for 6 minutes
-                nextPhase = "waterRow2";
+                nextPhase = waterRow2;
                 currentPhase = newPhase;
                 break;
-            case "waterRow1":
-                lastPhase = "waterRow1";
-                newPhase = "waterRow2";
+            case waterRow1:
+                lastPhase = waterRow1;
+                newPhase = waterRow2;
                 //actions
                 pumpStart(); //not necessary
                 row1Stop();
                 row2Start();
                 phaseLength = 60*6;     //run for 6 minutes
-                nextPhase = "waterSprinklers";
+                nextPhase = waterSprinklers;
                 currentPhase = newPhase;
                 break;
-            case "waterRow2":
-                lastPhase = "waterRow2";
-                newPhase = "waterSprinklers";
+            case waterRow2:
+                lastPhase = waterRow2;
+                newPhase = waterSprinklers;
                 //actions
                 pumpStart(); //not necessary
                 row2Stop();
                 sprinklerStart();
                 phaseLength = 60*5;     //run for 5 minutes
-                nextPhase = "";
+                nextPhase = 0;
                 currentPhase = newPhase;
                 break;
             /*case "waterRow3":
                 //do stuff
                 break;*/
-            case "waterSprinklers":
-                lastPhase = "waterSprinklers";
-                newPhase = "idle";
+            case waterSprinklers:
+                lastPhase = waterSprinklers;
+                newPhase = idle;
                 //actions
                 sprinklerStop();
                 pumpStop();
                 phaseLength = 0;
-                nextPhase = "";
+                nextPhase = 0;
                 currentPhase = newPhase;
                 break;
             default:
@@ -326,12 +335,12 @@ void loop() {
         // Serial.println("%");
         //Serial.print(hygro2);
         //Serial.println("%");
-        Particle.publish("SoilLog", (String)hygroAvg + "%");
+        Particle.publish("SoilLog", (String)hygrometerReadout() + "%");
 
         loopCounter = 1;    //reset loop counter
     }
     else if (loopCounter == 0){
-        Particle.publish("SoilLog", (String)hygroAvg + "%");           
+        Particle.publish("SoilLog", (String)hygrometerReadout() + "%");           
     }
     
     /*
