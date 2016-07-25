@@ -1,3 +1,8 @@
+// This #include statement was automatically added by the Particle IDE.
+#include "MQTT/MQTT.h"
+
+//SYSTEM_MODE(SEMI_AUTOMATIC);
+
 //set APN to Hologram.io rather than Particle
 #include "cellular_hal.h" //required to set APN
 STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
@@ -21,6 +26,7 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
     
     //related globals
     bool pumpRunning = false;
+    bool debug = false; //kills initial connection and does no publishing of data. enables relaytest.
 
     // create FuelGauge
     FuelGauge fuel;
@@ -43,6 +49,8 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
     const int waterRow3 = 4;
     const int waterSprinklers = 5;
     const int idle = 100;
+    const char cycleEnded = '1';
+    char Str[9] = "Success!";
 
     int currentPhase = init;
     int newPhase = 0;
@@ -95,11 +103,10 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
     }
       
 
-    int relayTest(String command){
+    bool relayTest(String command){
         // Create a nice string with commas between x,y,z
         //String pubAccel = String::format("%d,%d,%d",t.readX(),t.readY(),t.readZ());
-        
-        if(Particle.publish("Performing Relay Test", "", 60, PRIVATE)){
+            Serial.print("Starting relay test.");
             
             digitalWrite(valveRow1, LOW);
             delay(200);
@@ -116,11 +123,8 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
             digitalWrite(valvePump, LOW);
             delay(200);
             digitalWrite(valvePump, HIGH);
+            Serial.print("done.");
             return true;
-        }
-        else{
-            return false;
-        }
             
     }
     // --- End IFTTT Subscription ---
@@ -142,7 +146,78 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
         RGB.brightness(bright); //set bright
     }
             
+    //control functions
+    void row1Start(){
+        digitalWrite(valveRow1, LOW); //start row 1
+    }
 
+    void row1Stop(){
+        digitalWrite(valveRow1, HIGH); //stop row 1  
+    }
+
+    void row2Start(){
+        digitalWrite(valveRow2, LOW); //start row 2  
+    }
+
+    void row2Stop(){
+        digitalWrite(valveRow2, HIGH); //stop row 1
+    }
+
+    void sprinklerStart(){
+        digitalWrite(valveSprinkler, LOW); //start sprinkler
+    }
+
+    void sprinklerStop(){
+        digitalWrite(valveSprinkler, HIGH); //start sprinkler  
+    }
+
+    void allIrrigationStop(){
+        digitalWrite(valveRow1, HIGH); //stop row 1
+        digitalWrite(valveRow2, HIGH); //stop row 1
+        digitalWrite(valveSprinkler, HIGH); //start sprinkler
+        digitalWrite(valvePump, HIGH); //stop pump
+    }
+
+    void pumpStart(){
+        digitalWrite(valvePump, LOW); //stop pump
+    }
+
+    void pumpStop(){
+        digitalWrite(valvePump, HIGH); //stop pump
+    }
+
+    float getHygroAvg(){
+        float hygro1 = analogRead(hygro1Pin);
+        hygro1 = constrain(hygro1, 1192, 4095);
+            //hygro1 = 2642;  //testing integer
+        float hygro2 = analogRead(hygro2Pin);
+        hygro2 = constrain(hygro2, 1192, 4095);
+            //hygro2 = 2642;  //testing integer
+
+        // Convert to percentages
+        // Value read minus 1192 (low value), then divided into 2093 (range between 1192 and 4095) = percentage dry (p). Then 100 - (p) will be percent wet (moisture percentage).
+        hygro1Percent = 100-(((hygro1-1192)/2903)*100);
+        hygro2Percent = 100-(((hygro2-1192)/2903)*100);
+
+        float hygroAvg = (hygro1Percent + hygro2Percent) / 2;
+        return hygroAvg;
+    }
+
+    float getWindspeed(){
+        anemoValue = analogRead(anemoPin); //Get a value between 0 and 4095 from the analog pin connected to the anemometer
+        anemoVoltage = anemoValue * voltageConversionConstant; //Convert sensor value to actual voltage
+        
+        //Convert voltage value to wind speed using range of max and min voltages and wind speed for the anemometer
+        if (anemoVoltage <= anemoVoltMin){
+            windSpeed = 0; //Check if voltage is below minimum value. If so, set wind speed to zero.
+        }
+        else {
+            windSpeed = (anemoVoltage - anemoVoltMin) * (windSpeedMax / (anemoVoltMax - anemoVoltMin)); //For voltages above minimum value, use the linear relationship to calculate wind speed.
+        }
+        return windSpeed;
+
+
+    }
 
 //SETUP
 
@@ -180,92 +255,30 @@ void setup() {
 
     Serial.begin(9600);
     
-    Particle.variable("hygro1", hygro1);
-    Particle.variable("hygro2", hygro2);
-    Particle.subscribe("IFTTT", IFTTTsentEvent);
-    
-    //DroneHome has booted. GPS will update every 20 minutes. Battery|
-    //String strBootup = String::format("%d min updates. Power: %.2fv, %.2f\%.",delayMinutes,fuel.getVCell(),fuel.getSoC());
-    String strBootup = String::format("Power: %.2fv, %.2f\%.",fuel.getVCell(),fuel.getSoC());
-    Particle.publish("Booted", strBootup, 60, PRIVATE);
+    /*if (!(debug)){
+        //Particle.connect();
+    }*/
+
+    if (Particle.connected() == true){
+        Particle.variable("hygro1", hygro1);
+        Particle.variable("hygro2", hygro2);
+        Particle.subscribe("IFTTT", IFTTTsentEvent);
+        
+        //DroneHome has booted. GPS will update every 20 minutes. Battery|
+        //String strBootup = String::format("%d min updates. Power: %.2fv, %.2f\%.",delayMinutes,fuel.getVCell(),fuel.getSoC());
+        String strBootup = String::format("Power: %.2fv, %.2f\%.",fuel.getVCell(),fuel.getSoC());
+        Particle.publish("Booted", strBootup, 60, PRIVATE);
+    }
+
     
     //init complete!
     setLED(0,255,0,255,0); //r,g,b,%,x - full green
-}
-
-
-
-void row1Start(){
-    digitalWrite(valveRow1, LOW); //start row 1
-}
-
-void row1Stop(){
-    digitalWrite(valveRow1, HIGH); //stop row 1  
-}
-
-void row2Start(){
-    digitalWrite(valveRow2, LOW); //start row 2  
-}
-
-void row2Stop(){
-    digitalWrite(valveRow2, HIGH); //stop row 1
-}
-
-void sprinklerStart(){
-    digitalWrite(valveSprinkler, LOW); //start sprinkler
-}
-
-void sprinklerStop(){
-    digitalWrite(valveSprinkler, HIGH); //start sprinkler  
-}
-
-void allIrrigationStop(){
-    digitalWrite(valveRow1, HIGH); //stop row 1
-    digitalWrite(valveRow2, HIGH); //stop row 1
-    digitalWrite(valveSprinkler, HIGH); //start sprinkler
-    digitalWrite(valvePump, HIGH); //stop pump
-}
-
-void pumpStart(){
-    digitalWrite(valvePump, LOW); //stop pump
-}
-
-void pumpStop(){
-    digitalWrite(valvePump, HIGH); //stop pump
-}
-
-float hygrometerReadout(){
-    float hygro1 = analogRead(hygro1Pin);
-    hygro1 = constrain(hygro1, 1192, 4095);
-        //hygro1 = 2642;  //testing integer
-    float hygro2 = analogRead(hygro2Pin);
-    hygro2 = constrain(hygro2, 1192, 4095);
-        //hygro2 = 2642;  //testing integer
-
-    // Convert to percentages
-    // Value read minus 1192 (low value), then divided into 2093 (range between 1192 and 4095) = percentage dry (p). Then 100 - (p) will be percent wet (moisture percentage).
-    hygro1Percent = 100-(((hygro1-1192)/2903)*100);
-    hygro2Percent = 100-(((hygro2-1192)/2903)*100);
-
-    float hygroAvg = (hygro1Percent + hygro2Percent) / 2;
-    return hygroAvg;
-}
-
-float anemometerReadout(){
-    anemoValue = analogRead(anemoPin); //Get a value between 0 and 4095 from the analog pin connected to the anemometer
-    anemoVoltage = anemoValue * voltageConversionConstant; //Convert sensor value to actual voltage
-    
-    //Convert voltage value to wind speed using range of max and min voltages and wind speed for the anemometer
-    if (anemoVoltage <= anemoVoltMin){
-        windSpeed = 0; //Check if voltage is below minimum value. If so, set wind speed to zero.
-    }
-    else {
-        windSpeed = (anemoVoltage - anemoVoltMin) * (windSpeedMax / (anemoVoltMax - anemoVoltMin)); //For voltages above minimum value, use the linear relationship to calculate wind speed.
-    }
-    return windSpeed;
 
 
 }
+
+
+
 
 // blah blah code
 //rtc.now();
@@ -292,7 +305,11 @@ void loop() {
 
 void loop() {
 
-    if((int)Time.now() >= phaseStartedAt + phaseLength){
+    if(debug){
+        relayTest("test");
+    }
+    
+    if((!(debug)) && ((int)Time.now() >= phaseStartedAt + phaseLength)){ //if not debugging, and if this phase is over,
         phaseStartedAt = Time.now();
         //it's time to switch phase
         switch (currentPhase){
@@ -341,6 +358,7 @@ void loop() {
                 //actions
                 sprinklerStop();
                 pumpStop();
+                Particle.publish("irrigationRunLog", (String)Str[9]);
                 phaseLength = 60*60*11.7;
                 nextPhase = init; //not being used but should be
                 currentPhase = newPhase;
@@ -354,23 +372,24 @@ void loop() {
     }
 
     //Publish Results
+    if (!(debug)){
 
-    if(loopCounter == 30*60*3){ //get to minutes, get to hours, number of hours.
-        
-        //Every 3 hours, publish hygroAverage
-        // Serial.print(hygro1);
-        // Serial.println("%");
-        //Serial.print(hygro2);
-        //Serial.println("%");
-        Particle.publish("SoilLog", (String)hygrometerReadout() + "%");
-        Particle.syncTime();
-        loopCounter = 1;    //reset loop counter
-    }
-    else if (loopCounter == 0){
-        //first time only
-        Particle.publish("SoilLog", (String)hygrometerReadout() + "%");           
-    }
-    
+        if(loopCounter == 30*60*3){ //minutes, hours, number of hours. every 3 hours, publish soil info
+            
+            //Every 3 hours, publish hygroAverage
+            // Serial.print(hygro1);
+            // Serial.println("%");
+            //Serial.print(hygro2);
+            //Serial.println("%");
+            Particle.publish("SoilLog", (String)getHygroAvg() + "%");
+            Particle.syncTime();
+            loopCounter = 1;    //reset loop counter
+        }
+        else if (loopCounter == 0){
+            //first time only
+            Particle.publish("SoilLog", (String)getHygroAvg() + "%");           
+        }
+    }    
     
    /* Particle.publish("Time", 
     "Time.Now is currently " + Time.now(),  //+ String::format("%.2f",soil) + "\%" + 
@@ -384,11 +403,17 @@ void loop() {
     // Serial.print(anemoVoltage);
     // Serial.print("Wind speed MPH: ");
     // Serial.println(windSpeed);
-    if((int)loopCounter % 5 == 0){
-        Particle.publish("WindSpeed", (String)anemometerReadout() + " MPH", 60, PRIVATE);
-        Particle.publish("AnemoVoltage", (String)anemoVoltage);
-        Particle.publish("AnemoPinReading", (String)anemoValue);
+
+    //every 5 loops, publish anemo readings
+
+    if (!(debug)){
+        if((int)loopCounter % 5 == 0){
+            Particle.publish("windSpeed", (String)getWindspeed() + " MPH", 60, PRIVATE);
+            Particle.publish("AnemoVoltage", (String)anemoVoltage);
+            Particle.publish("AnemoPinReading", (String)anemoValue);
+        }    
     }
+
     
     loopCounter++;
 
@@ -443,3 +468,5 @@ void loop()
     delay(200);                       // waits for 200mS
   }
 }*/
+
+
