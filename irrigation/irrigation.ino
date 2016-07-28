@@ -71,7 +71,7 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
     int anemoValue = 0; //Variable stores the value direct from the analog pin
     float anemoVoltage = 0.0; //Variable that stores the voltage (in Volts) from the anemometer being sent to the analog pin
     float windSpeed = 0.0; // Wind speed in meters per second (m/s)
-    float voltageConversionConstant = 0.00080; //This constant maps the value provided from the analog read function, which ranges from 0 to 4095, to actual voltage, which ranges from 0V to 3.3V
+    float voltageConversionConstant = 0.00039072; //This constant maps the value provided from the analog read function, which ranges from 0 to 4095, to actual voltage, which ranges from 0V to 2V
     int anemoDelay = 3000; //Delay between sensor readings, measured in milliseconds (ms)
 
     float anemoVoltMin = 0.4; // Mininum output voltage from anemometer in mV.
@@ -212,11 +212,9 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
             windSpeed = 0; //Check if voltage is below minimum value. If so, set wind speed to zero.
         }
         else {
-            windSpeed = (anemoVoltage - anemoVoltMin) * (windSpeedMax / (anemoVoltMax - anemoVoltMin)); //For voltages above minimum value, use the linear relationship to calculate wind speed.
+            windSpeed = (anemoVoltage) * (windSpeedMax / (anemoVoltMax - anemoVoltMin)); //For voltages above minimum value, use the linear relationship to calculate wind speed.
         }
         return windSpeed;
-
-
     }
 
 //SETUP
@@ -237,7 +235,7 @@ void setup() {
     //pinMode(hygro3Pin, INPUT_PULLDOWN);
     //pinMode(hygro4Pin, INPUT_PULLDOWN);
     //pinMode(hygro5Pin, INPUT_PULLDOWN);
-    pinMode(anemoPin, INPUT_PULLDOWN);
+    pinMode(anemoPin, INPUT);
 
     //set up relays
     pinMode(valveRow1, OUTPUT);
@@ -372,6 +370,7 @@ void loop() {
     }
 
     //Publish Results
+    
     if (!(debug)){
 
         if(loopCounter == 30*60*3){ //minutes, hours, number of hours. every 3 hours, publish soil info
