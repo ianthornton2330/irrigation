@@ -12,7 +12,7 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
     //inputs (Analog A0-A5)
     const int hygro1Pin = A5;
     const int hygro2Pin = A4;
-    const int anemoPin = A0;
+    const int anemoPin = A1;
 
     //leds
     const int idleLED = D7;
@@ -71,7 +71,7 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
     int anemoValue = 0; //Variable stores the value direct from the analog pin
     float anemoVoltage = 0.0; //Variable that stores the voltage (in Volts) from the anemometer being sent to the analog pin
     float windSpeed = 0.0; // Wind speed in meters per second (m/s)
-    float voltageConversionConstant = 0.00039072; //This constant maps the value provided from the analog read function, which ranges from 0 to 4095, to actual voltage, which ranges from 0V to 2V
+    float voltageConversionConstant = 0.0008; //This constant maps the value provided from the analog read function, which ranges from 0 to 4095, to actual voltage, which ranges from 0V to 2V
     int anemoDelay = 3000; //Delay between sensor readings, measured in milliseconds (ms)
 
     float anemoVoltMin = 0.4; // Mininum output voltage from anemometer in mV.
@@ -205,15 +205,20 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
 
     float getWindspeed(){
         anemoValue = analogRead(anemoPin); //Get a value between 0 and 4095 from the analog pin connected to the anemometer
-        anemoVoltage = anemoValue * voltageConversionConstant; //Convert sensor value to actual voltage
+        /*anemoVoltage = anemoValue * voltageConversionConstant; //Convert sensor value to actual voltage
         
         //Convert voltage value to wind speed using range of max and min voltages and wind speed for the anemometer
         if (anemoVoltage <= anemoVoltMin){
             windSpeed = 0; //Check if voltage is below minimum value. If so, set wind speed to zero.
         }
         else {
-            windSpeed = (anemoVoltage) * (windSpeedMax / (anemoVoltMax - anemoVoltMin)); //For voltages above minimum value, use the linear relationship to calculate wind speed.
-        }
+            windSpeed = (anemoVoltage - anemoVoltMin) * (windSpeedMax / (anemoVoltMax - anemoVoltMin)); //For voltages above minimum value, use the linear relationship to calculate wind speed.
+        }*/
+
+        /* The math here works in that: minVoltage .4V == minWind 0 MPH == pinRead 496, and maxVoltage 2V == maxWind 72.47 MPH == pinRead 2482
+            given that (pinRead * 3.3V)/4095 = pinVoltage, and (pinVoltage * 4095) / 3.3V = pinRead*/
+        anemoValue = constrain(anemoValue, 496, 2482);
+        windSpeed = map(anemoValue, 496, 2482, 0, 72.47);
         return windSpeed;
     }
 
@@ -235,7 +240,7 @@ void setup() {
     //pinMode(hygro3Pin, INPUT_PULLDOWN);
     //pinMode(hygro4Pin, INPUT_PULLDOWN);
     //pinMode(hygro5Pin, INPUT_PULLDOWN);
-    pinMode(anemoPin, INPUT);
+    pinMode(anemoPin, INPUT_PULLDOWN);
 
     //set up relays
     pinMode(valveRow1, OUTPUT);
@@ -408,7 +413,7 @@ void loop() {
     if (!(debug)){
         if((int)loopCounter % 5 == 0){
             Particle.publish("windSpeed", (String)getWindspeed() + " MPH", 60, PRIVATE);
-            Particle.publish("AnemoVoltage", (String)anemoVoltage);
+            //Particle.publish("AnemoVoltage", (String)anemoVoltage);
             Particle.publish("AnemoPinReading", (String)anemoValue);
         }    
     }
