@@ -50,7 +50,6 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
     const int waterSprinklers = 5;
     const int idle = 100;
     const char cycleEnded = '1';
-    char Str[9] = "Success!";
 
     int currentPhase = init;
     int newPhase = 0;
@@ -205,7 +204,10 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
 
     float getWindspeed(){
         anemoValue = analogRead(anemoPin); //Get a value between 0 and 4095 from the analog pin connected to the anemometer
-        /*anemoVoltage = anemoValue * voltageConversionConstant; //Convert sensor value to actual voltage
+        
+        anemoValue = constrain(anemoValue, 496, 2482);
+
+        anemoVoltage = anemoValue * voltageConversionConstant; //Convert sensor value to actual voltage
         
         //Convert voltage value to wind speed using range of max and min voltages and wind speed for the anemometer
         if (anemoVoltage <= anemoVoltMin){
@@ -213,12 +215,12 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
         }
         else {
             windSpeed = (anemoVoltage - anemoVoltMin) * (windSpeedMax / (anemoVoltMax - anemoVoltMin)); //For voltages above minimum value, use the linear relationship to calculate wind speed.
-        }*/
+        }
 
         /* The math here works in that: minVoltage .4V == minWind 0 MPH == pinRead 496, and maxVoltage 2V == maxWind 72.47 MPH == pinRead 2482
             given that (pinRead * 3.3V)/4095 = pinVoltage, and (pinVoltage * 4095) / 3.3V = pinRead*/
-        anemoValue = constrain(anemoValue, 496, 2482);
-        windSpeed = map(anemoValue, 496, 2482, 0, 72.47);
+        /*anemoValue = constrain(anemoValue, 496, 2482);
+        windSpeed = map(anemoValue, 496, 2482, 0, 72.47);*/
         return windSpeed;
     }
 
@@ -361,7 +363,7 @@ void loop() {
                 //actions
                 sprinklerStop();
                 pumpStop();
-                Particle.publish("irrigationRunLog", (String)Str[9]);
+                Particle.publish("irrigationRunLog", "", 60, PRIVATE);
                 phaseLength = 60*60*11.7;
                 nextPhase = init; //not being used but should be
                 currentPhase = newPhase;
@@ -376,7 +378,7 @@ void loop() {
 
     //Publish Results
     
-    if (!(debug)){
+    /*if (!(debug)){
 
         if(loopCounter == 30*60*3){ //minutes, hours, number of hours. every 3 hours, publish soil info
             
@@ -393,8 +395,21 @@ void loop() {
             //first time only
             Particle.publish("SoilLog", (String)getHygroAvg() + "%");           
         }
+    }   
+    */
+    if (!(debug)){
+        
+        if((int)loopCounter % 30*30 == 0){ //minutes, * 30.    //old = 5. every 5 loops, so 10 seconds
+            Particle.publish("windSpeed", (String)getWindspeed() + " MPH", 60, PRIVATE);
+            //Particle.publish("AnemoVoltage", (String)anemoVoltage);
+            //Particle.publish("AnemoPinReading", (String)anemoValue);
+        }
+        else if (loopCounter == 0){
+            //first time only
+            Particle.publish("windSpeed", (String)getWindspeed() + " MPH", 60, PRIVATE);
+        }    
     }    
-    
+
    /* Particle.publish("Time", 
     "Time.Now is currently " + Time.now(),  //+ String::format("%.2f",soil) + "\%" + 
    // ", soil2:" + String::format("%.2f",soil2) + "\%" + 
@@ -410,13 +425,7 @@ void loop() {
 
     //every 5 loops, publish anemo readings
 
-    if (!(debug)){
-        if((int)loopCounter % 5 == 0){
-            Particle.publish("windSpeed", (String)getWindspeed() + " MPH", 60, PRIVATE);
-            //Particle.publish("AnemoVoltage", (String)anemoVoltage);
-            Particle.publish("AnemoPinReading", (String)anemoValue);
-        }    
-    }
+
 
     
     loopCounter++;
