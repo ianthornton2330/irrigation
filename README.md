@@ -1,6 +1,6 @@
 # Irrigation
 
-This is the start of Ian’s Farm irrigation project. 
+This is the start of Ian’s Farm irrigation project.
 Utilizes Particle.io Electron platform.
 Data is hosted via an Adafruit.io feed, and data writes are triggered through IFTTT
 
@@ -8,10 +8,17 @@ Data is hosted via an Adafruit.io feed, and data writes are triggered through IF
 - Implement control from Adafruit.io
 - Implement scheduling based on real time
 	- Implement backup system for no-connectivity failover schedule maintenance
-- Implement RGB-backlit LED 
+- Implement RGB-backlit LED
+- Implement Humidity/Temperature monitoring and control
+- Implement LED control
+	- Simulate Seasonal Conditions via RGB LEDs
+	- Need to research proper wavelengths with brightest elements we can find
+- Implement Camera and Motion Detection
+- Design and Implement microbe delivery
+	- Microbes are refrigerated, need to deliver to some chamber, agitate for 5 mins, 	then spray on soil. Definitely need a separate pump and irrigation lines with misting heads.
 
-# Remote functions are: 
-**relayTest** - Tests all relays. 
+# Remote functions are:
+**relayTest** - Tests all relays.
 **startPhase(**phaseNumber**)** - Start the provided phase.
 **nextPhase** - Skip the current phase and continue to the next.
 
