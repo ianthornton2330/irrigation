@@ -318,7 +318,7 @@ void loop() {
         relayTest("test");
     }
     
-    if((!(debug)) && ((int)Time.now() >= phaseStartedAt + phaseLength)){ //if not debugging, and if this phase is over,
+    /*if((!(debug)) && ((int)Time.now() >= phaseStartedAt + phaseLength)){ //if not debugging, and if this phase is over,
         phaseStartedAt = Time.now();
         //it's time to switch phase
         switch (currentPhase){
@@ -359,9 +359,9 @@ void loop() {
                 currentPhase = newPhase;
                 setLED(255,75,0,255,10); //r,g,b,%,x - flash red-orange? 10x
                 break;
-            /*case "waterRow3":
+            //case "waterRow3":
                 //do stuff
-                break;*/
+                //break;
             case waterSprinklers:
                 lastPhase = waterSprinklers;
                 newPhase = init;
@@ -377,9 +377,9 @@ void loop() {
             default:
                 //this should never happen UNLESS phase == "" or on error
                 setLED(0,255,255,255,0); //r,g,b,%,x - solid cyan
-                allIrrigationStop();
+                allIrrigationStop(); 
         }
-    }
+    } */
 
     //Publish Results
     
