@@ -1,5 +1,5 @@
 // This #include statement was automatically added by the Particle IDE.
-#include "MQTT/MQTT.h"
+//#include "MQTT/MQTT.h"
 
 //SYSTEM_MODE(SEMI_AUTOMATIC);
 
@@ -264,16 +264,16 @@ void setup() {
         //Particle.connect();
     }*/
 
-    if (Particle.connected() == true){
-        Particle.variable("hygro1", hygro1);
-        Particle.variable("hygro2", hygro2);
+    //if (Particle.connected() == true){
+        //Particle.variable("hygro1", hygro1);
+        //Particle.variable("hygro2", hygro2);
         //Particle.subscribe("IFTTT", IFTTTsentEvent);
         
         //DroneHome has booted. GPS will update every 20 minutes. Battery|
         //String strBootup = String::format("%d min updates. Power: %.2fv, %.2f\%.",delayMinutes,fuel.getVCell(),fuel.getSoC());
         String strBootup = String::format("Power: %.2fv, %.2f\%.",fuel.getVCell(),fuel.getSoC());
         Particle.publish("Booted", strBootup, 60, PRIVATE);
-    }
+    //}
 
     
     //init complete!
@@ -363,7 +363,7 @@ void loop() {
                 //actions
                 sprinklerStop();
                 pumpStop();
-                Particle.publish("irrigationRunLog", "", 60, PRIVATE);
+                Particle.publish("irrigationRunLog", "1", 60, PRIVATE);
                 phaseLength = 60*60*11.7;
                 nextPhase = init; //not being used but should be
                 currentPhase = newPhase;
