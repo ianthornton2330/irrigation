@@ -267,7 +267,7 @@ void setup() {
     if (Particle.connected() == true){
         Particle.variable("hygro1", hygro1);
         Particle.variable("hygro2", hygro2);
-        Particle.subscribe("IFTTT", IFTTTsentEvent);
+        //Particle.subscribe("IFTTT", IFTTTsentEvent);
         
         //DroneHome has booted. GPS will update every 20 minutes. Battery|
         //String strBootup = String::format("%d min updates. Power: %.2fv, %.2f\%.",delayMinutes,fuel.getVCell(),fuel.getSoC());
