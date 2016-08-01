@@ -1,5 +1,5 @@
 // This #include statement was automatically added by the Particle IDE.
-//#include "MQTT/MQTT.h"
+#include "MQTT/MQTT.h"
 
 //SYSTEM_MODE(SEMI_AUTOMATIC);
 
@@ -8,11 +8,15 @@
 STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
 
 
+
+
 //PIN DEFINITIONS
     //inputs (Analog A0-A5)
     const int hygro1Pin = A5;
     const int hygro2Pin = A4;
     const int anemoPin = A1;
+    
+    char Str[9] = "Success!";
 
     //leds
     const int idleLED = D7;
@@ -94,11 +98,11 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
         if ((String)event == "IFTTT-relay"){
             relayTest("test");
         }
-        /*if (data)
+        if (data)
         Serial.println(data);
         else
         Serial.println("NULL");
-        */
+        
     }
       
 
@@ -264,16 +268,16 @@ void setup() {
         //Particle.connect();
     }*/
 
-    //if (Particle.connected() == true){
-        //Particle.variable("hygro1", hygro1);
-        //Particle.variable("hygro2", hygro2);
+    if (Particle.connected() == true){
+        Particle.variable("hygro1", hygro1);
+        Particle.variable("hygro2", hygro2);
         //Particle.subscribe("IFTTT", IFTTTsentEvent);
         
         //DroneHome has booted. GPS will update every 20 minutes. Battery|
         //String strBootup = String::format("%d min updates. Power: %.2fv, %.2f\%.",delayMinutes,fuel.getVCell(),fuel.getSoC());
         String strBootup = String::format("Power: %.2fv, %.2f\%.",fuel.getVCell(),fuel.getSoC());
         Particle.publish("Booted", strBootup, 60, PRIVATE);
-    //}
+    }
 
     
     //init complete!
@@ -325,6 +329,7 @@ void loop() {
                 //actions
                 pumpStart();
                 row1Start();
+                Particle.publish("irrigationRow1", (String)Str[9]);
                 phaseLength = 60*6;     //run for 6 minutes
                 nextPhase = waterRow2;
                 currentPhase = newPhase;
@@ -363,7 +368,7 @@ void loop() {
                 //actions
                 sprinklerStop();
                 pumpStop();
-                Particle.publish("irrigationRunLog", "1", 60, PRIVATE);
+                Particle.publish("irrigationRunLog", (String)Str[9]);
                 phaseLength = 60*60*11.7;
                 nextPhase = init; //not being used but should be
                 currentPhase = newPhase;
@@ -481,5 +486,6 @@ void loop()
     delay(200);                       // waits for 200mS
   }
 }*/
+
 
 
