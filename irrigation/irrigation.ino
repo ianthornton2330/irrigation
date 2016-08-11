@@ -1,5 +1,5 @@
 // This #include statement was automatically added by the Particle IDE.
-#include "MQTT/MQTT.h"
+#include "Adafruit_IO_Particle/Adafruit_IO_Particle.h"
 
 //SYSTEM_MODE(SEMI_AUTOMATIC);
 
@@ -16,7 +16,9 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
     const int hygro2Pin = A4;
     const int anemoPin = A1;
     
-    char Str[9] = "Success!";
+    const int battBankPin = B5;
+    
+    const char Str[9] = "Success!";
 
     //leds
     const int idleLED = D7;
@@ -85,6 +87,13 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
 
     //loop and logic globals
     double loopCounter = 0;
+    
+    //Battery Bank Current Sensor
+    float batteryVoltOut = 0.0;
+    float batteryVoltIn = 0.0;
+    float resistor1 = 30000.0; //  
+    float resistor2 = 7480.0; // 
+    int batteryBankValue = 0;
 
 
 
@@ -104,8 +113,23 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
         Serial.println("NULL");
         
     }
-      
-
+    
+    //--- Begin Adafruit Subscription ---
+    /*    
+    #define ADAFRUIT_ENABLED 0
+    #define ADAFRUIT_API_KEY "05c08d242d944219b9369ca1f409f368"
+    #define ADAFRUIT_FEED_WINDSPEED "windSpeed
+    
+    #if ADAFRUIT_ENABLED
+    #include "Adafruit_IO_Client.h"
+    #include "Adafruit_IO_Arduino.h"
+    #endif
+    
+    #if ADAFRUIT_ENABLED
+    Adafruit_IO_Client aio = Adafruit_IO_Client(tcpClient, ADAFRUIT_API_KEY);
+    Adafruit_IO_Feed aioWindSpeed = aio.getFeed(ADAFRUIT_FEED_WINDSPEED);
+    #endif
+    */
     bool relayTest(String command){
         // Create a nice string with commas between x,y,z
         //String pubAccel = String::format("%d,%d,%d",t.readX(),t.readY(),t.readZ());
@@ -206,9 +230,8 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
         return hygroAvg;
     }
 
-    float getWindspeed(){
+    int getWindspeed(){
         anemoValue = analogRead(anemoPin); //Get a value between 0 and 4095 from the analog pin connected to the anemometer
-        
         anemoValue = constrain(anemoValue, 496, 2482);
 
         anemoVoltage = anemoValue * voltageConversionConstant; //Convert sensor value to actual voltage
@@ -226,6 +249,12 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
         /*anemoValue = constrain(anemoValue, 496, 2482);
         windSpeed = map(anemoValue, 496, 2482, 0, 72.47);*/
         return windSpeed;
+    }
+    
+    float getBatteryBankLevel(){
+        batteryBankValue = analogRead(battBankPin);
+        batteryVoltOut = ( batteryBankValue * 3.3 ) / 4095; // see text
+        batteryVoltIn = batteryVoltOut / (resistor2 / ( resistor1 + resistor2 ));
     }
 
 //SETUP
@@ -261,6 +290,9 @@ void setup() {
     digitalWrite(valveRow3, HIGH);
     digitalWrite(valveSprinkler, HIGH);
     digitalWrite(valvePump, HIGH);
+    
+    //set up Battery Bank Current Sensor
+    pinMode(battBankPin, INPUT_PULLDOWN);
 
     Serial.begin(9600);
     
@@ -282,7 +314,12 @@ void setup() {
     
     //init complete!
     setLED(0,255,0,255,0); //r,g,b,%,x - full green
-
+    
+    /*
+    #if ADAFRUIT_ENABLED
+    aio.begin();
+    #endif
+    */
 
 }
 
@@ -318,7 +355,7 @@ void loop() {
         relayTest("test");
     }
     
-    /*if((!(debug)) && ((int)Time.now() >= phaseStartedAt + phaseLength)){ //if not debugging, and if this phase is over,
+   /* if((!(debug)) && ((int)Time.now() >= phaseStartedAt + phaseLength)){ //if not debugging, and if this phase is over,
         phaseStartedAt = Time.now();
         //it's time to switch phase
         switch (currentPhase){
@@ -379,7 +416,8 @@ void loop() {
                 setLED(0,255,255,255,0); //r,g,b,%,x - solid cyan
                 allIrrigationStop(); 
         }
-    } */
+    }
+    */
 
     //Publish Results
     
@@ -402,18 +440,20 @@ void loop() {
         }
     }   
     */
-    if (!(debug)){
         
-        if((int)loopCounter % 30*30 == 0){ //minutes, * 30.    //old = 5. every 5 loops, so 10 seconds
-            Particle.publish("windSpeed", (String)getWindspeed() + " MPH", 60, PRIVATE);
+        if((int)loopCounter % 5 == 0){ //minutes, * 30.    //old = 5. every 5 loops, so 10 seconds
+            Particle.publish("windSpeed", (String)getWindspeed() + " MPH");
+            Particle.publish("batteryBankLevel", String::format("%.2f",getBatteryBankLevel()) + " V");
+            Particle.publish("soilLevel", String::format("%.2f",getHygroAvg()) + " %");
             //Particle.publish("AnemoVoltage", (String)anemoVoltage);
             //Particle.publish("AnemoPinReading", (String)anemoValue);
         }
         else if (loopCounter == 0){
             //first time only
-            Particle.publish("windSpeed", (String)getWindspeed() + " MPH", 60, PRIVATE);
+            Particle.publish("windSpeed", (String)getWindspeed() + " MPH");
+            Particle.publish("batteryBankLevel", String::format("%.2f",getBatteryBankLevel()) + " V");
+            Particle.publish("soilLevel", String::format("%.2f",getHygroAvg()) + " %");
         }    
-    }    
 
    /* Particle.publish("Time", 
     "Time.Now is currently " + Time.now(),  //+ String::format("%.2f",soil) + "\%" + 
@@ -422,16 +462,6 @@ void loop() {
     60, PRIVATE
     ); 
     */
-  
-    // Serial.print("Voltage: ");
-    // Serial.print(anemoVoltage);
-    // Serial.print("Wind speed MPH: ");
-    // Serial.println(windSpeed);
-
-    //every 5 loops, publish anemo readings
-
-
-
     
     loopCounter++;
 
@@ -486,6 +516,7 @@ void loop()
     delay(200);                       // waits for 200mS
   }
 }*/
+
 
 
 
