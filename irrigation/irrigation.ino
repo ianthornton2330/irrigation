@@ -91,8 +91,8 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
     //Battery Bank Current Sensor
     float batteryVoltOut = 0.0;
     float batteryVoltIn = 0.0;
-    float resistor1 = 30000.0; //  
-    float resistor2 = 7480.0; // 
+    float resistor1 = 30000.0; 
+    float resistor2 = 7480.0;
     int batteryBankValue = 0;
 
 
@@ -355,7 +355,7 @@ void loop() {
         relayTest("test");
     }
     
-   /* if((!(debug)) && ((int)Time.now() >= phaseStartedAt + phaseLength)){ //if not debugging, and if this phase is over,
+    if((!(debug)) && ((int)Time.now() >= phaseStartedAt + phaseLength)){ //if not debugging, and if this phase is over,
         phaseStartedAt = Time.now();
         //it's time to switch phase
         switch (currentPhase){
@@ -417,30 +417,10 @@ void loop() {
                 allIrrigationStop(); 
         }
     }
-    */
 
     //Publish Results
-    
-    /*if (!(debug)){
+    //if (!(debug)){
 
-        if(loopCounter == 30*60*3){ //minutes, hours, number of hours. every 3 hours, publish soil info
-            
-            //Every 3 hours, publish hygroAverage
-            // Serial.print(hygro1);
-            // Serial.println("%");
-            //Serial.print(hygro2);
-            //Serial.println("%");
-            Particle.publish("SoilLog", (String)getHygroAvg() + "%");
-            Particle.syncTime();
-            loopCounter = 1;    //reset loop counter
-        }
-        else if (loopCounter == 0){
-            //first time only
-            Particle.publish("SoilLog", (String)getHygroAvg() + "%");           
-        }
-    }   
-    */
-        
         if((int)loopCounter % 5 == 0){ //minutes, * 30.    //old = 5. every 5 loops, so 10 seconds
             Particle.publish("windSpeed", (String)getWindspeed() + " MPH");
             Particle.publish("batteryBankLevel", String::format("%.2f",getBatteryBankLevel()) + " V");
@@ -453,15 +433,8 @@ void loop() {
             Particle.publish("windSpeed", (String)getWindspeed() + " MPH");
             Particle.publish("batteryBankLevel", String::format("%.2f",getBatteryBankLevel()) + " V");
             Particle.publish("soilLevel", String::format("%.2f",getHygroAvg()) + " %");
-        }    
-
-   /* Particle.publish("Time", 
-    "Time.Now is currently " + Time.now(),  //+ String::format("%.2f",soil) + "\%" + 
-   // ", soil2:" + String::format("%.2f",soil2) + "\%" + 
-    //" - soilAvg:" + String::format("%.2f",soilAvg) + "\%",
-    60, PRIVATE
-    ); 
-    */
+        }  
+    //}
     
     loopCounter++;
 
@@ -469,32 +442,15 @@ void loop() {
     delay(1000*2);   //wait 2 seconds between loops
 }
 
-
-
-
-
-
-
-
-
-
-
 // extra crap for Particle functions
 
 
 // Lets you remotely check the battery status by calling the function "batt"
-// Triggers a publish with the info (so subscribe or watch the dashboard)
-// and also returns a '1' if there's >10% battery left and a '0' if below
+// Triggers a publish with the info (so subscribe or watch the dashboard) and also returns a '1' if there's >10% battery left and a '0' if below
 int batteryStatus(String command){
-    // Publish the battery voltage and percentage of battery remaining
-    // if you want to be really efficient, just report one of these
-    // the String::format("%f.2") part gives us a string to publish,
-    // but with only 2 decimal points to save space
-    Particle.publish("Battery Status", 
-          "voltage:" + String::format("%.2f",fuel.getVCell()) + 
-          ",charge:" + String::format("%.2f",fuel.getSoC()) + "\%",
-          60, PRIVATE
-    );
+    // Publish the battery voltage and percentage of battery remaining if you want to be really efficient, just report one of these
+    // the String::format("%f.2") part gives us a string to publish, but with only 2 decimal points to save space
+    Particle.publish("Battery Status", "voltage:" + String::format("%.2f",fuel.getVCell()) + ",charge:" + String::format("%.2f",fuel.getSoC()) + "\%",60, PRIVATE);
 
     if(fuel.getSoC()>10){
         return 1;
@@ -505,17 +461,6 @@ int batteryStatus(String command){
     }
 }
 
-/*
-void loop()
-{
-  // blink the LED as long as the button is pressed
-  while(digitalRead(button) == HIGH) {
-    digitalWrite(LED, HIGH);          // sets the LED on
-    delay(200);                       // waits for 200mS
-    digitalWrite(LED, LOW);           // sets the LED off
-    delay(200);                       // waits for 200mS
-  }
-}*/
 
 
 
