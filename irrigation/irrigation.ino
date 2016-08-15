@@ -16,6 +16,8 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
     const int hygro2Pin = A4;
     const int anemoPin = A1;
     
+    const int Tank1trig = B0;
+    const int Tank1echo = B1;
     const int battBankPin = B5;
     
     const char Str[9] = "Success!";
@@ -256,6 +258,30 @@ STARTUP(cellular_credentials_set("apn.konekt.io", "", "", NULL));
         batteryVoltOut = ( batteryBankValue * 3.3 ) / 4095; // see text
         batteryVoltIn = batteryVoltOut / (resistor2 / ( resistor1 + resistor2 ));
     }
+    
+    float getWaterAvg(){
+        long t = 0, h = 0, hp = 0;
+  
+        // Transmitting pulse
+        digitalWrite(Tank1trig, LOW);
+        delayMicroseconds(2);
+        digitalWrite(Tank1trig, HIGH);
+        delayMicroseconds(10);
+        digitalWrite(Tank1trig, LOW);
+        
+        // Waiting for pulse
+        t = pulseIn(Tank1echo, HIGH);
+        
+        // Calculating distance 
+        h = t / 58;
+        
+        h = h - 6;  // offset correction
+        h = 50 - h;  // water height, 0 - 50 cm
+        
+        hp = 2 * h;  // distance in %, 0-100 %
+        
+        return hp;
+    }
 
 //SETUP
 
@@ -276,6 +302,8 @@ void setup() {
     //pinMode(hygro4Pin, INPUT_PULLDOWN);
     //pinMode(hygro5Pin, INPUT_PULLDOWN);
     pinMode(anemoPin, INPUT_PULLDOWN);
+    pinMode(Tank1trig, OUTPUT);
+    pinMode(Tank1echo, INPUT);
 
     //set up relays
     pinMode(valveRow1, OUTPUT);
@@ -421,10 +449,11 @@ void loop() {
     //Publish Results
     //if (!(debug)){
 
-        if((int)loopCounter % 5 == 0){ //minutes, * 30.    //old = 5. every 5 loops, so 10 seconds
+        if((int)loopCounter % 10 == 0){ //minutes, * 30.    //old = 5. every 5 loops, so 10 seconds
             Particle.publish("windSpeed", (String)getWindspeed() + " MPH");
             Particle.publish("batteryBankLevel", String::format("%.2f",getBatteryBankLevel()) + " V");
             Particle.publish("soilLevel", String::format("%.2f",getHygroAvg()) + " %");
+            Particle.publish("waterLevel", String::format("%.2f",getWaterAvg()) + " %");
             //Particle.publish("AnemoVoltage", (String)anemoVoltage);
             //Particle.publish("AnemoPinReading", (String)anemoValue);
         }
@@ -433,6 +462,8 @@ void loop() {
             Particle.publish("windSpeed", (String)getWindspeed() + " MPH");
             Particle.publish("batteryBankLevel", String::format("%.2f",getBatteryBankLevel()) + " V");
             Particle.publish("soilLevel", String::format("%.2f",getHygroAvg()) + " %");
+            Particle.publish("waterLevel", String::format("%.2f",getWaterAvg()) + " %");
+
         }  
     //}
     
